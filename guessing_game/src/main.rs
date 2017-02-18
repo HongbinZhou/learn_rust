@@ -13,7 +13,13 @@ fn main() {
 
         let mut guess = String::new();
         io::stdin().read_line(&mut guess).expect("Failed to read input");
-        let guess : u32 = guess.trim().parse().expect("Please input an integer!");
+        let guess : u32 = match guess.trim().parse() {
+            Err(msg)  => {
+                println!{"error: {}", msg};
+                continue
+            },
+            Ok(num) => num
+        };
 
         match guess.cmp(&magic_number) {
             Ordering::Less  => println!("{} is too small!", guess),
