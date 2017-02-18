@@ -14,6 +14,9 @@ fn main() {
         let mut guess = String::new();
         io::stdin().read_line(&mut guess).expect("Failed to read input");
         let guess : u32 = match guess.trim().parse() {
+            // learn: https://doc.rust-lang.org/book/patterns.html
+            // can get the full value by:
+            // err @ Err(_) => {...}
             Err(msg)  => {
                 println!{"error: {}", msg};
                 continue
