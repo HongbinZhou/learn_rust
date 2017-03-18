@@ -1,5 +1,6 @@
 use std::io::{self, Write};
 
+#[allow(dead_code)]
 fn use_calc() {
     print!("Please input: ");
     io::stdout().flush().unwrap();
@@ -9,6 +10,7 @@ fn use_calc() {
     calc(&input);
 }
 
+#[allow(dead_code)]
 fn calc(input:&str) -> i32 {
     // let mut raw = String::from(input);
     println!("\n---- {}", &input);
@@ -48,7 +50,7 @@ fn test_calc() {
     assert_eq!(calc(" 2 * 3 * 4 /2 "), 12);
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 enum Operator {
     Add,
     Sub,
@@ -56,7 +58,7 @@ enum Operator {
     Div
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 enum Token {
     Op(Operator),
     Num(u32),
@@ -66,17 +68,21 @@ enum Token {
     Unknown,
 }
 
-struct AST {
-    node: Token,
-    left: Box<AST>,
-    right: Box<AST>
+#[derive(Debug)]
+enum AST {
+    Num(u32),
+    Add(Box<AST>, Box<AST>),
+    Sub(Box<AST>, Box<AST>),
+    Mul(Box<AST>, Box<AST>),
+    Div(Box<AST>, Box<AST>),
 }
 
-struct Input<'a> {
-    input: &'a str,
+struct Input {
+    input: String,
 }
 
-impl<'a> Input<'a> {
+impl Input {
+
     fn token(&self, input: &str) -> Token {
         use Token::*;
         let mut tok = Unknown;
@@ -146,9 +152,87 @@ impl<'a> Input<'a> {
         }
     }
 
+    fn syntax(&self, current_ast: Option<AST>, vt: &[Token]) -> Option<AST> {
+        use Token::*;
+        use Operator::*;
+        if let Some((first, elements)) = vt.split_first() {
+            match first {
+                &Space => {
+                    self.syntax(current_ast, elements)
+                },
+                &Unknown => None,
+                &Num(a) => {
+                    let node = AST::Num(a);
+                    if elements.len() > 1 {
+                        self.syntax(Some(node), elements)
+                    }
+                    else
+                    {
+                        Some(node)
+                    }
+
+                },
+                &Op(Mul) => {
+                    let left = current_ast.unwrap();
+                    let right = self.syntax(None, elements).unwrap();
+                    Some(AST::Mul(Box::new(left), Box::new(right)))
+                },
+                &Op(Div) => {
+                    let left = current_ast.unwrap();
+                    if let Some((divider, remains)) = elements.split_first() {
+                        let mut tmp = Vec::new();
+                        tmp.push(divider.clone());
+                        let ast = AST::Div(Box::new(left), Box::new(self.syntax(None, &tmp).unwrap_or(AST::Num(100))));
+                        self.syntax(Some(ast), remains)
+
+                    }else{
+                        None
+                    }
+                },
+                &Op(Add) => {
+                    let left = current_ast.unwrap();
+                    let right = self.syntax(None, elements).unwrap();
+                    Some(AST::Add(Box::new(left), Box::new(right)))
+                },
+                &Op(Sub) => {
+                    let left = current_ast.unwrap();
+                    let right = self.syntax(None, elements).unwrap();
+                    Some(AST::Sub(Box::new(left), Box::new(right)))
+                },
+                &LParen | &RParen => {
+                    self.syntax(None, elements)
+                }
+            }
+        } else {
+            None
+        }
+    }
+
+}
+
+
+#[test]
+fn test_syntax() {
+    // let input = Input {input: "12* (3-1)/2-1"};
+    // let input = Input {input: "1 + 2"};
+    let input = Input {input: "12/2 - 3".to_string()};
+    let lex = input.lex();
+    println!("lex: {:?}", &lex);
+    let ast = input.syntax(None, &lex);
+    println!("ast: {:?}", ast);
+}
+
+#[test]
+fn test_lex() {
+    use Token::*;
+    use Operator::*;
+    let input = Input {input: "12* (3-1)/2-1".to_string()};
+    assert_eq!(Num(12), input.lex()[0]);
+    assert_eq!(Op(Mul), input.lex()[1]);
+    assert_eq!(Num(3), input.lex()[4]);
 }
 
 fn main() {
-    let input = Input {input: "12* (3-1)/2-1"};
-    println!("{:?}", input.split());
+    println!("main");
+    test_syntax();
 }
