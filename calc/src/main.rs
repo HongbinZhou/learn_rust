@@ -68,7 +68,7 @@ enum Token {
     Unknown,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum AST {
     Num(u32),
     Add(Box<AST>, Box<AST>),
@@ -113,7 +113,11 @@ impl Input {
         loop {
             match self.substr_at(idx) {
                 Some(substr) => {
-                    toks.push(self.token(&substr));
+                    let tok = self.token(&substr);
+                    match tok {
+                        Token::Space => {},
+                        _ => toks.push(tok),
+                    }
                     idx += substr.len();
                 }
                 None => {break;}
@@ -210,6 +214,184 @@ impl Input {
 
 }
 
+struct Parser {
+    toks: Vec<Token>,
+    offset: usize,
+}
+
+impl Parser {
+    fn new(toks: Vec<Token>) -> Parser {
+        Parser {
+            toks: toks,
+            offset: 0
+        }
+    }
+    fn current(&self) -> &Token {
+        &self.toks[self.offset]
+    }
+    fn bump(&mut self) {
+        if self.offset + 1 > self.toks.len() {
+            panic!{"toks vec is empty!"};
+        }
+        self.offset += 1
+    }
+    fn is_empty(&self) -> bool {
+        self.offset + 1 > self.toks.len()
+    }
+
+    fn factor(&mut self) -> AST {
+        let tok = self.current().clone();
+        match tok {
+            Token::Num(a) => {
+                self.bump();
+                AST::Num(a)
+            }
+            Token::LParen => {
+                self.bump();
+                let ast = self.exp();
+                self.expect(&Token::RParen);
+                ast
+            }
+            _ => {panic!{"todo"}}
+        }
+    }
+
+    fn exp(&mut self) -> AST {
+        let item = self.term();
+        self.handle_add_sub(item)
+
+    }
+
+    fn handle_div_mul(&mut self, t: AST) -> AST {
+        let tok = self.current().clone();
+        match tok {
+            Token::Op(Operator::Mul) => {
+                self.bump();
+                let rc = AST::Mul(Box::new(t), Box::new(self.factor()));
+                if self.is_empty() {
+                    rc
+                }else {
+                    self.handle_div_mul(rc)
+                }
+            },
+            Token::Op(Operator::Div) => {
+                self.bump();
+                let rc = AST::Div(Box::new(t), Box::new(self.factor()));
+                if self.is_empty() {
+                    rc
+                }else {
+                    self.handle_div_mul(rc)
+                }
+            },
+            _ => {t}
+        }
+    }
+    fn handle_add_sub(&mut self, t:AST) -> AST {
+        let tok = self.current().clone();
+        match tok {
+            Token::Op(Operator::Add) => {
+                self.bump();
+                let rc = AST::Add(Box::new(t), Box::new(self.term()));
+                if self.is_empty() {
+                    rc
+                }else {
+                    self.handle_add_sub(rc)
+                }
+            },
+            Token::Op(Operator::Sub) => {
+                self.bump();
+                let rc = AST::Sub(Box::new(t), Box::new(self.term()));
+                if self.is_empty() {
+                    rc
+                }else {
+                    self.handle_add_sub(rc)
+                }
+            },
+            _ => {t}
+        }
+    }
+
+    fn term(&mut self) -> AST {
+        let a = self.factor();
+        if self.is_empty(){
+            a
+        }
+        else {
+            self.handle_div_mul(a)
+        }
+    }
+
+    fn expect(&mut self, tok: &Token) {
+        if self.current() == tok {
+            self.bump();
+        }else{
+            panic!{"expect {:?} but got {:?}", tok, self.current()};
+        }
+    }
+}
+
+fn eval(t: &AST) -> u32 {
+    use AST::*;
+    match t {
+        &Num(a) => a,
+        &Add(ref x, ref y) => eval(&x) + eval(&y),
+        &Sub(ref x, ref y) => eval(&x) - eval(&y),
+        &Div(ref x, ref y) => eval(&x) / eval(&y),
+        &Mul(ref x, ref y) => eval(&x) * eval(&y),
+    }
+}
+
+#[test]
+fn test_eval() {
+    use AST::*;
+    let mut input = Input {input: "1+2-3".to_string()};
+    let mut lex = input.lex();
+    println!("lex: {:?}", &lex);
+    let mut parser = Parser::new(lex);
+    let mut ast = parser.exp();
+    println!{"ast: {:?}", ast};
+    let mut result = eval(&ast);
+    assert_eq!(result, 0);
+
+    println!{"--------------------------------------------------"};
+    input = Input {input: "1+2+3*12/(3 - 2)".to_string()};
+    lex = input.lex();
+    println!("lex: {:?}", &lex);
+    parser = Parser::new(lex);
+    ast = parser.exp();
+    println!{"ast: {:?}", ast};
+    result = eval(&ast);
+    assert_eq!(result, 39);
+
+}
+#[test]
+fn test_parser() {
+    use AST::*;
+    let mut input = Input {input: "1+2-3".to_string()};
+    let mut lex = input.lex();
+    println!("lex: {:?}", &lex);
+    let mut parser = Parser::new(lex);
+    let mut ast = parser.exp();
+    println!{"ast: {:?}", ast};
+
+    assert_eq!(ast, Sub(Box::new(Add(Box::new(Num(1)),
+                                     Box::new(Num(2)))),
+                        Box::new(Num(3))));
+
+    println!{"--------------------------------------------------"};
+    input = Input {input: "1+2-3*12/(2 - 3)".to_string()};
+    lex = input.lex();
+    println!("lex: {:?}", &lex);
+    parser = Parser::new(lex);
+    ast = parser.exp();
+    println!{"ast: {:?}", ast};
+
+
+    assert_eq!(ast, Sub(Box::new(Add(Box::new(Num(1)), Box::new(Num(2)))),
+                        Box::new(Div(Box::new(Mul(Box::new(Num(3)), Box::new(Num(12)))),
+                                     Box::new(Sub(Box::new(Num(2)), Box::new(Num(3))))))));
+
+}
 
 #[test]
 fn test_syntax() {
