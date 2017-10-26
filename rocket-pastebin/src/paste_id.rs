@@ -2,6 +2,7 @@ use std::fmt;
 use std::borrow::Cow;
 
 use rocket::request::FromParam;
+use rocket::http::RawStr;
 
 use rand::{self, Rng};
 
@@ -48,7 +49,7 @@ fn valid_id(id: &str) -> bool {
 impl<'a> FromParam<'a> for PasteID<'a> {
     type Error = &'a str;
 
-    fn from_param(param: &'a str) -> Result<PasteID<'a>, &'a str> {
+    fn from_param(param: &'a RawStr) -> Result<PasteID<'a>, &'a str> {
         match valid_id(param) {
             true => Ok(PasteID(Cow::Borrowed(param))),
             false => Err(param)
