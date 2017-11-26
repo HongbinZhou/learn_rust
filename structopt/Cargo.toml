@@ -1,0 +1,8 @@
+[package]
+name = "structopt"
+version = "0.1.0"
+authors = ["Hongbin Zhou <hongbinzhou@hotmail.com>"]
+
+[dependencies]
+structopt = "*"
+structopt-derive = "*"
