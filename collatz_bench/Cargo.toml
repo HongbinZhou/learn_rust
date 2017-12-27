@@ -1,0 +1,14 @@
+[package]
+name = "collatz_bench"
+version = "0.1.0"
+authors = ["Hongbin Zhou <hongbinzhou@hotmail.com>"]
+links = "collatz"
+build = "build.rs"
+
+[dependencies]
+libc = "*"
+lazy_static = "*"
+
+[build-dependencies]
+cc = "*"
+
