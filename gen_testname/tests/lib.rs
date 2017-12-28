@@ -58,6 +58,6 @@ mod test {
     test_function_with_n!(foo, 1);
     test_function_with_n!(bar, 1);
     test_function_with_n!(foo, 2);
-    test_function_with_n!(bar, 3);
+    test_function_with_n!(bar, 2);
 
 }
