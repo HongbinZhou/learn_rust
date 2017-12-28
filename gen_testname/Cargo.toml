@@ -1,0 +1,6 @@
+[package]
+name = "gen_testname"
+version = "0.1.0"
+authors = ["Hongbin Zhou <hongbinzhou@hotmail.com>"]
+
+[dependencies]
