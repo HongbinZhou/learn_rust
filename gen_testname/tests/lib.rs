@@ -47,17 +47,32 @@ mod test {
     // How to you "generate" unique tests name based on tested functions and its
     // arguments? Thanks!
 
+    // macro_rules! test_function_with_n {
+    //     ($func:ident, $n:expr) => {
+    //         #[test]
+    //         fn $func_$n {
+    //             assert_eq!($n, $func($n));
+    //         }
+    //     }
+    // }
+    // test_function_with_n!(foo, 1);
+    // test_function_with_n!(bar, 1);
+    // test_function_with_n!(foo, 2);
+    // test_function_with_n!(bar, 2);
+
+    // Workaround: pass in indent
+
     macro_rules! test_function_with_n {
-        ($func:ident, $n:expr) => {
+        ($testcase:ident: $func:ident, $n:expr) => {
             #[test]
-            fn $func_$n {
+            fn $testcase() {
                 assert_eq!($n, $func($n));
             }
         }
     }
-    test_function_with_n!(foo, 1);
-    test_function_with_n!(bar, 1);
-    test_function_with_n!(foo, 2);
-    test_function_with_n!(bar, 2);
+    test_function_with_n!(test_foo_1: foo, 1);
+    test_function_with_n!(test_bar_1: bar, 1);
+    test_function_with_n!(test_foo_2: foo, 2);
+    test_function_with_n!(test_bar_2: bar, 2);
 
 }
