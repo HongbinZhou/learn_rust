@@ -4,5 +4,5 @@ version = "0.1.0"
 authors = ["Hongbin Zhou <hongbinzhou@hotmail.com>"]
 
 [dependencies]
-structopt = "*"
-structopt-derive = "*"
+structopt = "0.2.8"
+structopt-derive = "0.2.8"

@@ -11,12 +11,9 @@ use structopt::StructOpt;
 #[derive(StructOpt, Debug)]
 #[structopt(name = "simple")]
 struct Simple {
-    #[structopt(parse(try_from_str))]
    i_want_a_u64: u64,
-
-   // see issue https://github.com/TeXitoi/structopt/issues/30
+    #[structopt(short="v", long="verbose", parse(from_occurrences))]
    num_of_repetitions_of_this_parameter: u64,
-
 }
 
 
